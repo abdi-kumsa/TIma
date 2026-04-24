@@ -6,12 +6,17 @@ import OverallPlans from './pages/OverallPlans';
 import Settings from './pages/Settings';
 import Stats from './pages/Stats';
 import Login from './pages/Login';
+import SetPin from './pages/SetPin';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     Component: Login,
+  },
+  {
+    path: '/set-pin',
+    element: <ProtectedRoute><SetPin /></ProtectedRoute>,
   },
   {
     path: '/',

@@ -4,25 +4,53 @@ import { useAuth } from '../context/AuthContext';
 import { Sparkles, Mail, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function Login() {
-  const { signInWithMagicLink } = useAuth();
+  const { signInWithMagicLink, signInWithPin, checkUserStatus } = useAuth();
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
+  const [pin, setPin] = useState('');
+  const [step, setStep] = useState<'email' | 'check' | 'pin' | 'magic' | 'sent' | 'error'>('email');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
-    setStatus('loading');
+    setStep('check');
     setErrorMsg('');
 
-    const { error } = await signInWithMagicLink(email.trim());
+    try {
+      const status = await checkUserStatus(email.trim());
+      if (status.exists && status.hasPin) {
+        setStep('pin');
+      } else {
+        setStep('magic');
+      }
+    } catch (err: any) {
+      setStep('error');
+      setErrorMsg(err.message || 'Something went wrong');
+    }
+  };
 
+  const handleMagicLink = async () => {
+    setStep('check');
+    const { error } = await signInWithMagicLink(email.trim());
     if (error) {
-      setStatus('error');
+      setStep('error');
       setErrorMsg(error);
     } else {
-      setStatus('sent');
+      setStep('sent');
+    }
+  };
+
+  const handlePinLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin.length !== 6) return;
+
+    setStep('check');
+    const { error } = await signInWithPin(email.trim(), pin);
+    if (error) {
+      setStep('pin');
+      setErrorMsg('Invalid PIN. Please try again.');
+      setPin('');
     }
   };
 
@@ -56,11 +84,12 @@ export default function Login() {
 
         {/* Card */}
         <AnimatePresence mode="wait">
-          {status === 'sent' ? (
+          {step === 'sent' ? (
             <motion.div
               key="sent"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center"
             >
               <motion.div
@@ -77,23 +106,124 @@ export default function Login() {
                 <br />Click it to sign in — no password needed.
               </p>
               <button
-                onClick={() => setStatus('idle')}
+                onClick={() => setStep('email')}
                 className="mt-6 text-indigo-300 text-sm hover:text-white transition-colors"
               >
                 Use a different email
               </button>
             </motion.div>
-          ) : (
+          ) : step === 'pin' ? (
             <motion.form
-              key="form"
+              key="pin"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              onSubmit={handleSubmit}
+              exit={{ opacity: 0, scale: 0.9 }}
+              onSubmit={handlePinLogin}
               className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8"
             >
-              <h2 className="text-xl font-bold text-white mb-1">Welcome back</h2>
+              <h2 className="text-xl font-bold text-white mb-1">Enter your PIN</h2>
               <p className="text-indigo-300 text-sm mb-6">
-                Enter your email and we'll send you a magic link
+                Enter your 6-digit secure PIN for <span className="text-white font-medium">{email}</span>
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex justify-between gap-2">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-10 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
+                        pin.length > i ? 'border-indigo-400 bg-indigo-400/20' : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      {pin[i] ? (
+                        <div className="w-2 h-2 bg-white rounded-full" />
+                      ) : (
+                        <div className="w-1 h-1 bg-white/20 rounded-full" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={pin}
+                  autoFocus
+                  onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="sr-only"
+                />
+
+                {errorMsg && (
+                  <p className="text-red-400 text-sm text-center">{errorMsg}</p>
+                )}
+
+                <div className="space-y-3">
+                  <motion.button
+                    type="submit"
+                    disabled={pin.length !== 6 || step === 'check'}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {step === 'check' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+                  </motion.button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleMagicLink}
+                    className="w-full text-indigo-300 text-xs hover:text-white transition-colors"
+                  >
+                    Forgot PIN? Sign in with email instead
+                  </button>
+                </div>
+              </div>
+            </motion.form>
+          ) : step === 'magic' ? (
+            <motion.div
+              key="magic"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 text-center"
+            >
+              <div className="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-indigo-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Finish your setup</h2>
+              <p className="text-indigo-200 text-sm leading-relaxed mb-6">
+                To keep your account secure, we need to verify your email first. 
+                After that, you'll be able to set your 6-digit PIN.
+              </p>
+              
+              <motion.button
+                onClick={handleMagicLink}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2"
+              >
+                Send Magic Link
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+
+              <button
+                onClick={() => setStep('email')}
+                className="mt-6 text-indigo-300 text-sm hover:text-white transition-colors"
+              >
+                Back
+              </button>
+            </motion.div>
+          ) : (
+            <motion.form
+              key="email"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              onSubmit={handleContinue}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8"
+            >
+              <h2 className="text-xl font-bold text-white mb-1">Welcome</h2>
+              <p className="text-indigo-300 text-sm mb-6">
+                Enter your email to continue to your dashboard
               </p>
 
               <div className="space-y-4">
@@ -105,35 +235,26 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
-                    disabled={status === 'loading'}
+                    disabled={step === 'check'}
                     className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-indigo-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 transition-all disabled:opacity-50"
                   />
                 </div>
 
-                {status === 'error' && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-400 text-sm px-1"
-                  >
-                    {errorMsg}
-                  </motion.p>
+                {step === 'error' && (
+                  <p className="text-red-400 text-sm px-1">{errorMsg}</p>
                 )}
 
                 <motion.button
                   type="submit"
-                  disabled={status === 'loading' || !email.trim()}
+                  disabled={step === 'check' || !email.trim()}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {status === 'loading' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Sending...
-                    </>
+                  {step === 'check' ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      Send Magic Link
+                      Continue
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -141,7 +262,7 @@ export default function Login() {
               </div>
 
               <p className="text-center text-indigo-400 text-xs mt-6">
-                No password required · Works on all your devices
+                Secure 6-digit PIN login supported
               </p>
             </motion.form>
           )}

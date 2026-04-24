@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +22,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If user is logged in but hasn't set a PIN, redirect to set-pin
+  // (unless they are already on the set-pin page)
+  if (profile && !profile.has_pin && window.location.pathname !== '/set-pin' && !window.location.pathname.includes('/set-pin')) {
+    return <Navigate to="/set-pin" replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;
