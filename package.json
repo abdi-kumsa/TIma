@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://bluDev2.github.io/TIma",
+  "homepage": "https://abdi-kumsa.github.io/TIma",
   "scripts": {
     "dev": "vite",
     "build": "vite build"
