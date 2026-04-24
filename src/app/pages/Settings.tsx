@@ -1,13 +1,15 @@
 import { useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useDarkMode } from '../context/DarkModeContext';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Download, Upload, Trash2, Moon, Sun, Info } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Upload, Trash2, Moon, Sun, Info, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Settings() {
   const { exportTasks, importTasks, clearAllTasks } = useTasks();
   const { darkMode, toggleDarkMode } = useDarkMode();
+  const { user, profile, updateProfile, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -51,6 +53,11 @@ export default function Settings() {
   const handleToggleDarkMode = () => {
     toggleDarkMode();
     toast.info(`Dark mode ${!darkMode ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
   };
 
   return (
@@ -159,6 +166,49 @@ export default function Settings() {
                 <div className="text-left">
                   <div className="font-medium text-foreground">Clear All Tasks</div>
                   <div className="text-sm text-muted-foreground">Delete all tasks permanently</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Account & Profile */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card rounded-2xl shadow-xl p-6 border border-border"
+        >
+          <h2 className="text-lg font-bold text-foreground mb-4">Account & Profile</h2>
+          <div className="space-y-4">
+            {/* Profile Info */}
+            <div className="p-4 bg-secondary/50 rounded-xl space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20">
+                  <User className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    defaultValue={profile?.full_name || ''}
+                    placeholder="Enter full name"
+                    onBlur={(e) => updateProfile({ full_name: e.target.value })}
+                    className="bg-transparent border-none focus:ring-0 font-bold text-foreground w-full p-0 text-lg"
+                  />
+                  <div className="text-xs text-muted-foreground">{user?.email}</div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-between p-4 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors border border-red-500/10"
+            >
+              <div className="flex items-center gap-3">
+                <LogOut className="w-5 h-5 text-red-500" />
+                <div className="text-left">
+                  <div className="font-medium text-foreground">Sign Out</div>
+                  <div className="text-sm text-muted-foreground">Sign out from this device</div>
                 </div>
               </div>
             </button>
