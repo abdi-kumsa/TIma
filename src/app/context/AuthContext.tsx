@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       options: {
         shouldCreateUser: true,
+        emailRedirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
       },
     });
 
