@@ -127,33 +127,35 @@ export default function Login() {
               </p>
 
               <div className="space-y-6">
-                <div className="flex justify-between gap-2">
-                  {[...Array(6)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-10 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
-                        pin.length > i ? 'border-indigo-400 bg-indigo-400/20' : 'border-white/10 bg-white/5'
-                      }`}
-                    >
-                      {pin[i] ? (
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      ) : (
-                        <div className="w-1 h-1 bg-white/20 rounded-full" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <div className="relative">
+                  <div className="flex justify-between gap-2">
+                    {[...Array(6)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-10 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
+                          pin.length > i ? 'border-indigo-400 bg-indigo-400/20' : 'border-white/10 bg-white/5'
+                        }`}
+                      >
+                        {pin[i] ? (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        ) : (
+                          <div className="w-1 h-1 bg-white/20 rounded-full" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={pin}
-                  autoFocus
-                  onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="sr-only"
-                />
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={pin}
+                    autoFocus
+                    onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10"
+                  />
+                </div>
 
                 {errorMsg && (
                   <p className="text-red-400 text-sm text-center">{errorMsg}</p>
